@@ -1,5 +1,9 @@
 <resources>
     <string name="app_name">XING Challenge</string>
-    <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
+
+    <string name="dialog_message">Would you like to open the repository page for %1$s or visit the user profile of %2$s?</string>
+    <string name="repository">Repository</string>
+    <string name="owner">User Profile</string>
+    <string name="cancel">Cancel</string>
 </resources>

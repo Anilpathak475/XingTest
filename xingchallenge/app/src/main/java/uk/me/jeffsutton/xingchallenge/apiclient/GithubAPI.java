@@ -47,7 +47,7 @@ public class GithubAPI {
      * @return Response - the API response
      * @throws IOException
      */
-    public static Response getRepositoryList(String username, String type) throws IOException {
+    public static Response getRepositoryList(String username, String type, int page, int itemCount) throws IOException {
         URL requestURL = new URL(String.format(URL_GET_REPO_LIST, username, type));
         HttpURLConnection connection = (HttpURLConnection) requestURL.openConnection();
         connection = configureConnection(connection);

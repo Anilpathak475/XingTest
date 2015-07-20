@@ -100,7 +100,6 @@ public class RepositoryListAdapter extends BaseAdapter {
 
         if (convertView == null) {
             convertView = mInflater.inflate(R.layout.list_item_repository, parent, false);
-
             viewHolder = new RepoListViewHolder();
             viewHolder.repoName = (TextView) convertView.findViewById(R.id.repo_name);
             viewHolder.repoOwner = (TextView) convertView.findViewById(R.id.repo_owner);
@@ -116,6 +115,12 @@ public class RepositoryListAdapter extends BaseAdapter {
             viewHolder.repoName.setText(repo.name);
             viewHolder.repoOwner.setText(repo.owner.login);
             viewHolder.repoDescription.setText(repo.description);
+
+            if (repo.fork) {
+                convertView.setBackgroundColor(mContext.getResources().getColor(R.color.background_fork));
+            } else {
+                convertView.setBackgroundColor(mContext.getResources().getColor(R.color.background_normal));
+            }
         }
 
         return convertView;
