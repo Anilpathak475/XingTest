@@ -1,0 +1,22 @@
+* Spec requested "We would prefer if you'd not use libraries for network and tasks" - wasn't sure if 
+  this applied to parsing the JSON response, so used Gson for this.  Apologies if this is not what was
+  wanted.
+  
+* For a demo app some techniques were not applied that would usually go into a production app - better
+  obfuscation using ProGuard, and more app security using DexGuard (String encryption, etc) and potentially
+  techniques like SSL pinning for secure API requests.
+  
+* Not totally happy with the "Loading data" footer we apply to the list while loading extra data - it's a bit
+  jerky.  Could probably make this smoother in a live app.
+  
+* Elements of the API client such as the API Key could be better hidden to protect against reverse engineering.
+
+* Handling of error responses could be better/more comprehensive.  At the moment we're just notifying with
+  a toast.  We should really manage retrying and giving more useful messages to the user.
+  
+* The UI isn't prety.
+
+* We do handle device rotation to avoid unecessary reloading and API calls
+
+* The API requests perform no caching to prevent us downloading data that we don't need - would be nice to
+  implement this in a real-world app to conserve bandwidth and APi requests (as they are limited).

@@ -22,6 +22,8 @@ import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -35,8 +37,11 @@ import uk.me.jeffsutton.xingchallenge.util.Utils;
 
 /**
  * Simple ListFragment to contain list of public repositories
+ * <p/>
+ * API requests are performed on an ExecutorService to prevent UI thread blocking.
  */
-public class MainActivityFragment extends ListFragment implements AdapterView.OnItemLongClickListener, AbsListView.OnScrollListener {
+public class MainActivityFragment extends ListFragment implements AdapterView.OnItemLongClickListener,
+        AbsListView.OnScrollListener {
 
     private static final String LOG_TAG = MainActivityFragment.class.getSimpleName();
 
@@ -48,16 +53,20 @@ public class MainActivityFragment extends ListFragment implements AdapterView.On
     /**
      * Gson instance which also handles Dates as strings in ATOM_TIME format.
      */
-    private static final Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HHmmss.SSS'Z'").setPrettyPrinting().create();
+    private static final Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HHmmss.SSS'Z'")
+            .setPrettyPrinting().create();
 
     /**
      * Number of items to fetch per API request
      */
     private static final int FETCH_ITEM_COUNT = 10;
+
+    /**
+     * Runnable to show retry dialog in the event that there is no network connection
+     */
     private final Runnable noConnectionRunnable = new Runnable() {
         @Override
         public void run() {
-            // Show a dialog informing user of no internet connection.  Allow user to retry in case this is a temporary error.
             AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
             builder.setTitle(getActivity().getString(R.string.network_error));
             builder.setMessage(getActivity().getString(R.string.network_error_message));
@@ -78,6 +87,7 @@ public class MainActivityFragment extends ListFragment implements AdapterView.On
             builder.show();
         }
     };
+
     /**
      * ListAdapter containing repositories
      */
@@ -114,64 +124,19 @@ public class MainActivityFragment extends ListFragment implements AdapterView.On
             } else {
                 try {
                     isLoading = true;
-                    GithubAPI.Response repoList = GithubAPI.getRepositoryList("xing", GithubAPI.REPO_TYPE_PUBLIC, pagePosition, FETCH_ITEM_COUNT);
+                    GithubAPI.Response repoList = GithubAPI.getRepositoryList("xing",
+                            GithubAPI.REPO_TYPE_PUBLIC, pagePosition, FETCH_ITEM_COUNT);
                     if (repoList.responseCode == 200) {
-                        // Response code: 200 - everything went OK
-
-                        final GithubRepos repositories = new GithubRepos();
-
-                        Type targetClassType = new TypeToken<ArrayList<GithubRepo>>() {
-                        }.getType();
-                        repositories.repositories = gson.fromJson(repoList.data, targetClassType);
-
-                        if (repositories.repositories.size() == FETCH_ITEM_COUNT) {
-                            // We fetched FETCH_ITEM_COUNT number of items, so there may be more to load
-                            // increment the page position accordingly
-                            pagePosition++;
-                        } else {
-                            // We fetched less than FETCH_ITEM_COUNT so we will assume this was the final page
-                            continueToFetch = false;
-                        }
-
-                        // We can't change the Ui from here, so run this on the UI thread.
-                        getActivity().runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (repositories.repositories.size() > 0)
-                                    adapter.appendItems(repositories);
-                                if (getListAdapter() == null || getListView().getVisibility() != View.VISIBLE) {
-                                    setListAdapter(adapter);
-                                    if (adapter.getCount() > 0)
-                                        setListShown(true);
-                                }
-                                getListView().removeFooterView(loadingFooter);
-                            }
-                        });
-
-
+                        processRepositoriesAPIResponse(repoList.data);
                     } else if (repoList.responseCode == 403) {
-                        // 403 error - probably API rate limited
-                        if (repoList.headers.containsKey("X-RateLimit-Remaining") && repoList.headers.get("X-RateLimit-Remaining").get(0).equalsIgnoreCase("0")) {
-                            getActivity().runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    Toast.makeText(getActivity(), getString(R.string.rate_limited), Toast.LENGTH_SHORT).show();
-                                }
-                            });
-                        }
+                        processRateLimitedAPIResponse(repoList.headers);
                     } else {
-                        // Some other error perhaps?
+                        showToastMessage(R.string.unknown_error, Toast.LENGTH_SHORT);
                     }
-
-
                 } catch (UnknownHostException e) {
-                    getActivity().runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(getActivity(), getString(R.string.unknown_host), Toast.LENGTH_SHORT).show();
-                        }
-                    });
+                    showToastMessage(R.string.unknown_host, Toast.LENGTH_SHORT);
                 } catch (Exception e) {
+                    showToastMessage(R.string.unknown_error, Toast.LENGTH_SHORT);
                     e.printStackTrace();
                 }
             }
@@ -187,10 +152,68 @@ public class MainActivityFragment extends ListFragment implements AdapterView.On
         }
     };
     /**
-     * position of the last visible item in the list view. Used to calculate if we need to start loading more data.
+     * Position of the last visible item in the list view. Used to calculate if we need to start loading more data.
      */
     private int lastVisiblePosition;
 
+
+    /**
+     * Show a Toast popup.  Ensure this is running on the UI Thread
+     * @param message - String resource to show
+     * @param duration - Toast duration
+     */
+    private void showToastMessage(final int message, final int duration) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(getActivity(), getString(message), duration).show();
+            }
+        });
+    }
+
+    /**
+     * Process an API rate Limited failure response.
+     * <p/>
+     * We could do something useful here - for simplicity just show a Toast message.
+     * @param headers
+     */
+    private void processRateLimitedAPIResponse(Map<String, List<String>> headers) {
+        if (headers.containsKey("X-RateLimit-Remaining") &&
+                headers.get("X-RateLimit-Remaining").get(0).equalsIgnoreCase("0")) {
+            showToastMessage(R.string.rate_limited, Toast.LENGTH_SHORT);
+        }
+    }
+
+    /**
+     * Take a successful API response and process data to add to the list
+     * @param response
+     */
+    private void processRepositoriesAPIResponse(String response) {
+        final GithubRepos apiData = new GithubRepos();
+
+        Type targetClassType = new TypeToken<ArrayList<GithubRepo>>() {}.getType();
+        apiData.repositories = gson.fromJson(response, targetClassType);
+
+        if (apiData.repositories.size() == FETCH_ITEM_COUNT) {
+            pagePosition++;
+        } else {
+            continueToFetch = false;
+        }
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (apiData.repositories.size() > 0) {
+                    adapter.appendItems(apiData);
+                }
+                if (getListAdapter() == null || getListView().getVisibility() != View.VISIBLE) {
+                    setListAdapter(adapter);
+                    if (adapter.getCount() > 0)
+                        setListShown(true);
+                }
+                getListView().removeFooterView(loadingFooter);
+            }
+        });
+    }
 
     public MainActivityFragment() {
     }
@@ -272,7 +295,7 @@ public class MainActivityFragment extends ListFragment implements AdapterView.On
      * Callback method to be invoked while the list view or grid view is being scrolled. If the
      * view is being scrolled, this method will be called before the next frame of the scroll is
      * rendered. In particular, it will be called before any calls to
-     * {@link Adapter#getView(int, View, ViewGroup)}.
+     * {Adapter#getView(int, View, ViewGroup)}.
      *
      * @param view        The view whose scroll state is being reported
      * @param scrollState The current scroll state. One of
@@ -282,16 +305,14 @@ public class MainActivityFragment extends ListFragment implements AdapterView.On
     @Override
     public void onScrollStateChanged(AbsListView view, int scrollState) {
         if (scrollState == SCROLL_STATE_IDLE && lastVisiblePosition >= (view.getCount() - 5)) {
-            // We are near the end of the list - try and load some more data
-            // but only attempt to load data if we aren't already performing a load
             if (!isLoading && continueToFetch) {
                 isLoading = true;
                 if (loadingFooter == null) {
                     loadingFooter = LayoutInflater.from(getActivity()).inflate(R.layout.list_loading_footer, null, false);
                 }
                 getListView().addFooterView(loadingFooter);
-                if (lastVisiblePosition >= view.getCount() - 2) {
-                    getListView().smoothScrollToPosition(view.getCount());
+                if (lastVisiblePosition == view.getCount() - 1) {
+                    getListView().scrollBy(0, 60);
                 }
                 getListView().setOnScrollListener(null);
                 workerThread.submit(getRepositoryList);

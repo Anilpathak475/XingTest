@@ -15,4 +15,5 @@
     <string name="network_error_message">No network connection could be found.\n\nPlease connect to the internet and try again.</string>
     <string name="retry">Retry</string>
     <string name="rate_limited">API limit has been exceeded. Please try again later.</string>
+    <string name="unknown_error">An error occurred trying to fetch data from GitHub</string>
 </resources>

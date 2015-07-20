@@ -2,8 +2,6 @@ package uk.me.jeffsutton.xingchallenge.model;
 
 import com.google.gson.annotations.SerializedName;
 
-import java.util.Date;
-
 /**
  * Model to represent a single GitHub repository
  * <p/>
@@ -19,8 +17,5 @@ public class GithubRepo {
     public boolean private_repo;
     public String html_url;
     public String description;
-    public boolean fork = true;
-    public Date created_at;
-    public Date updated_at;
-    public Date pushed_at;
+    public Boolean fork;
 }

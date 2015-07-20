@@ -28,6 +28,7 @@ public class Utils {
      * @param context
      * @return
      */
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public static boolean isConnected(Context context) {
         NetworkInfo info = Utils.getNetworkInfo(context);
         return (info != null && info.isConnected());

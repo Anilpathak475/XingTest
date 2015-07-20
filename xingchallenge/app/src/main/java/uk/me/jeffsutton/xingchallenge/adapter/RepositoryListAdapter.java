@@ -126,7 +126,7 @@ public class RepositoryListAdapter extends BaseAdapter {
             viewHolder.repoOwner.setText(repo.owner.login);
             viewHolder.repoDescription.setText(repo.description);
 
-            if (repo.fork) {
+            if (repo.fork == null || repo.fork) {
                 convertView.setBackgroundColor(mContext.getResources().getColor(R.color.background_fork));
             } else {
                 convertView.setBackgroundColor(mContext.getResources().getColor(R.color.background_normal));

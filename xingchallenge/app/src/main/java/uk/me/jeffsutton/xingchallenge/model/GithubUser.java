@@ -8,6 +8,5 @@ package uk.me.jeffsutton.xingchallenge.model;
 public class GithubUser {
     public String login;
     public int id;
-    public String avatar_url;
     public String html_url;
 }

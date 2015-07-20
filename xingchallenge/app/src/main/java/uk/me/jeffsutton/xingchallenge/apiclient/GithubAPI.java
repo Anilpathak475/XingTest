@@ -20,11 +20,18 @@ public class GithubAPI {
     /**
      * URL Base for all api requests
      */
-    public static final String API_BASE = "https://api.github.com";
+    private static final String API_BASE = "https://api.github.com";
     /**
      * URL Path for list of user repositories
      */
-    public static final String URL_GET_REPO_LIST = API_BASE + "/users/%1$s/repos?type=%2$s&page=%3$d&per_page=%4$d&access_token=%5$s";
+    private static final String URL_GET_REPO_LIST = API_BASE + "/users/%1$s/repos?type=%2$s&page=%3$d&per_page=%4$d&access_token=%5$s";
+
+    /**
+     * Access token for requests.  In a real app we would want to hide this - perhaps as a byte[]
+     * or using string encryption from DexGuard
+     */
+    private static final String ACCESS_TOKEN = "1da23c1fb776875e89e12a266baa1969f5768afa";
+
     /**
      * Modifier for getRepositoryList().  Request all user repositories.
      */
@@ -50,7 +57,7 @@ public class GithubAPI {
      * @throws IOException
      */
     public static Response getRepositoryList(String username, String type, int page, int itemCount) throws IOException {
-        URL requestURL = new URL(String.format(URL_GET_REPO_LIST, username, type, page, itemCount, "1da23c1fb776875e89e12a266baa1969f5768afa"));
+        URL requestURL = new URL(String.format(URL_GET_REPO_LIST, username, type, page, itemCount, ACCESS_TOKEN));
         HttpURLConnection connection = (HttpURLConnection) requestURL.openConnection();
         connection = configureConnection(connection);
         connection.connect();
@@ -62,7 +69,6 @@ public class GithubAPI {
         if (connection.getInputStream() != null) {
             connection.getInputStream().close();
         }
-
         connection.disconnect();
 
         Response responseData = new Response();
@@ -82,7 +88,7 @@ public class GithubAPI {
      * @return
      * @throws ProtocolException
      */
-    public static HttpURLConnection configureConnection(HttpURLConnection connection) throws ProtocolException {
+    private static HttpURLConnection configureConnection(HttpURLConnection connection) throws ProtocolException {
         connection.setRequestMethod("GET");
         connection.setReadTimeout(10000);
         connection.setConnectTimeout(15000);
@@ -92,13 +98,13 @@ public class GithubAPI {
     }
 
     /**
-     * Log HTTP response headers, handly for debugging
+     * Log HTTP response headers, handy for debugging
      * @param headers
      */
     public static void logResponse(Map<String, List<String>> headers) {
         for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
             String h = entry.getKey() + " :\t " + entry.getValue();
-            Log.d("Header", h);
+            Log.d("Response Header", h);
         }
     }
 
@@ -109,7 +115,7 @@ public class GithubAPI {
      * @return String - representation of the read contents
      * @throws IOException
      */
-    public static String getResponseString(InputStream stream) throws IOException {
+    private static String getResponseString(InputStream stream) throws IOException {
         StringBuilder stringBuilder = new StringBuilder();
         BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
         String line;
