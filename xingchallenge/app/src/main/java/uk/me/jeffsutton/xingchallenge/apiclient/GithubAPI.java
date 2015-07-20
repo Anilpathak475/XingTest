@@ -9,25 +9,53 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.ProtocolException;
 import java.net.URL;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jeffsutton on 20/07/15.
  */
 public class GithubAPI {
 
+    /**
+     * URL Base for all api requests
+     */
     public static final String API_BASE = "https://api.github.com";
-    public static final String URL_GET_REPO_LIST = API_BASE + "/users/%1$s/repos";
-private static final String LOG_TAG = GithubAPI.class.getSimpleName();
+    /**
+     * URL Path for list of user repositories
+     */
+    public static final String URL_GET_REPO_LIST = API_BASE + "/users/%1$s/repos?type=%2$s";
+    /**
+     * Modifier for repository list.  Request all user repositories.
+     */
+    public static final String REPO_TYPE_ALL = "all";
+    /**
+     * Modifier for repository list.  Request public user repositories.
+     */
+    public static final String REPO_TYPE_PUBLIC = "public";
+    /**
+     * Modifier for repository list.  Request private user repositories.
+     */
+    public static final String REPO_TYPE_PRIVATE = "private";
+    private static final String LOG_TAG = GithubAPI.class.getSimpleName();
 
-    public static Response getRepositoryList(String username) throws IOException {
-        URL requestURL = new URL(String.format(URL_GET_REPO_LIST, username));
+    /**
+     * Get the list of available repositories for a given user
+     *
+     * @param username - name of the user we want to get repositories for
+     * @param type - modifier to filter returned repositories REPO_TYPE_ALL, REPO_TYPE_PUBLIC, REPO_TYPE_PRIVATE
+     * @return Response - the API response
+     * @throws IOException
+     */
+    public static Response getRepositoryList(String username, String type) throws IOException {
+        URL requestURL = new URL(String.format(URL_GET_REPO_LIST, username, type));
         HttpURLConnection connection = (HttpURLConnection) requestURL.openConnection();
-       connection = configureConnection(connection);
+        connection = configureConnection(connection);
         connection.connect();
 
         int responseCode = connection.getResponseCode();
         Log.d(LOG_TAG, "getRepositoryList() response code: " + responseCode);
-
+        Map<String, List<String>> headers = connection.getHeaderFields();
         String response = getResponseString(connection.getInputStream());
 
         if (connection.getInputStream() != null) {
@@ -38,6 +66,7 @@ private static final String LOG_TAG = GithubAPI.class.getSimpleName();
 
         Response responseData = new Response();
         responseData.responseCode = responseCode;
+        responseData.headers = headers;
         responseData.data = response;
 
         return responseData;
@@ -71,8 +100,12 @@ private static final String LOG_TAG = GithubAPI.class.getSimpleName();
         return stringBuilder.toString();
     }
 
+    /**
+     * Class to hold API responses, containing response code, response headers, and data as a String
+     */
     public static class Response {
         public int responseCode;
+        public Map<String, List<String>> headers;
         public String data;
     }
 
