@@ -94,6 +94,7 @@ public class MainActivityFragment extends ListFragment implements AdapterView.On
                 getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
+                        // Show a dialog informing user of no internet connection.  Allow user to retry in case this is a temporary error.
                         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
                         builder.setTitle(getActivity().getString(R.string.network_error));
                         builder.setMessage(getActivity().getString(R.string.network_error_message));
@@ -152,9 +153,20 @@ public class MainActivityFragment extends ListFragment implements AdapterView.On
                         });
 
 
+                    } else if (repoList.responseCode == 403) {
+                        // 403 error - probably API rate limited
+                        if (repoList.headers.containsKey("X-RateLimit-Remaining") && repoList.headers.get("X-RateLimit-Remaining").get(0).equalsIgnoreCase("0")) {
+                            getActivity().runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(getActivity(), getString(R.string.rate_limited), Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        }
                     } else {
-                        // We need to handle an invalid response here
+                        // Some other error perhaps?
                     }
+
 
                 } catch (UnknownHostException e) {
                     getActivity().runOnUiThread(new Runnable() {

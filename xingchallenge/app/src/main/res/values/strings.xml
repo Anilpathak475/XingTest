@@ -14,4 +14,5 @@
     <string name="network_error">Network Error.</string>
     <string name="network_error_message">No network connection could be found.\n\nPlease connect to the internet and try again.</string>
     <string name="retry">Retry</string>
+    <string name="rate_limited">API limit has been exceeded. Please try again later.</string>
 </resources>

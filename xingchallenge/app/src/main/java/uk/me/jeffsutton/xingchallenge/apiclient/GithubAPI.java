@@ -72,10 +72,18 @@ public class GithubAPI {
         responseData.headers = headers;
         responseData.data = response;
 
+        logResponse(headers);
+
         return responseData;
     }
 
 
+    /**
+     * generic connection configuration.  Handy if we deal with more than one API endpoint
+     * @param connection
+     * @return
+     * @throws ProtocolException
+     */
     public static HttpURLConnection configureConnection(HttpURLConnection connection) throws ProtocolException {
         connection.setRequestMethod("GET");
         connection.setReadTimeout(10000);
@@ -83,6 +91,16 @@ public class GithubAPI {
         connection.setInstanceFollowRedirects(true);
         connection.setDoInput(true);
         return connection;
+    }
+
+    /**
+     * Log HTTP response headers, handly for debugging
+     * @param headers
+     */
+    public static void logResponse(Map<String, List<String>> headers) {
+        for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
+            Log.d("Header", entry.getKey() + " :\t " + entry.getValue());
+        }
     }
 
     /**
