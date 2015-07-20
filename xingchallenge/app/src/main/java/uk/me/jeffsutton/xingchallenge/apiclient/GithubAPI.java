@@ -24,7 +24,7 @@ public class GithubAPI {
     /**
      * URL Path for list of user repositories
      */
-    public static final String URL_GET_REPO_LIST = API_BASE + "/users/%1$s/repos?type=%2$s&page=%3$d&per_page=%4$d";
+    public static final String URL_GET_REPO_LIST = API_BASE + "/users/%1$s/repos?type=%2$s&page=%3$d&per_page=%4$d&access_token=%5$s";
     /**
      * Modifier for getRepositoryList().  Request all user repositories.
      */
@@ -50,7 +50,7 @@ public class GithubAPI {
      * @throws IOException
      */
     public static Response getRepositoryList(String username, String type, int page, int itemCount) throws IOException {
-        URL requestURL = new URL(String.format(URL_GET_REPO_LIST, username, type, page, itemCount) + "&access_token=1da23c1fb776875e89e12a266baa1969f5768afa");
+        URL requestURL = new URL(String.format(URL_GET_REPO_LIST, username, type, page, itemCount, "1da23c1fb776875e89e12a266baa1969f5768afa"));
         HttpURLConnection connection = (HttpURLConnection) requestURL.openConnection();
         connection = configureConnection(connection);
         connection.connect();
