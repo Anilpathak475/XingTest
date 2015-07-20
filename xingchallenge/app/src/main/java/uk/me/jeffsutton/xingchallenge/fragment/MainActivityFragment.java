@@ -12,12 +12,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -27,6 +29,7 @@ import uk.me.jeffsutton.xingchallenge.adapter.RepositoryListAdapter;
 import uk.me.jeffsutton.xingchallenge.apiclient.GithubAPI;
 import uk.me.jeffsutton.xingchallenge.model.GithubRepo;
 import uk.me.jeffsutton.xingchallenge.model.GithubRepos;
+import uk.me.jeffsutton.xingchallenge.util.Utils;
 
 
 /**
@@ -50,80 +53,127 @@ public class MainActivityFragment extends ListFragment implements AdapterView.On
      * Number of items to fetch per API request
      */
     private static final int FETCH_ITEM_COUNT = 10;
+
     /**
      * ListAdapter containing repositories
      */
     RepositoryListAdapter adapter;
+
+    /**
+     * Footer view to indicate data is being loaded via the API
+     */
     View loadingFooter;
+
     /**
      * Flag to indicate if there may still be items to fetch from the API
      */
     private boolean continueToFetch = true;
+
     /**
      * Current paging position in the GitHub API
      */
     private int pagePosition = 1;
+
     /**
      * Flag to indicate if we are currently loading data
      */
     private boolean isLoading = false;
+
     /**
      * Get the list of repositories for the specified user (in this instance XING).
      * <p/>
      * We want to do this in the background to prevent locking-up the UI Thread.
+     * <p/>
+     * When data is loaded we append it to the list adapter.
      */
     Runnable getRepositoryList = new Runnable() {
         @Override
         public void run() {
-            try {
-                isLoading = true;
-                GithubAPI.Response repoList = GithubAPI.getRepositoryList("xing", GithubAPI.REPO_TYPE_PUBLIC, pagePosition, FETCH_ITEM_COUNT);
-                if (repoList.responseCode == 200) {
-                    // Response code: 200 - everything went OK
-                    Log.d(LOG_TAG, repoList.data);
+            if (!Utils.isConnected(getActivity())) {
+                Log.i(LOG_TAG, "No network found");
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+                        builder.setTitle(getActivity().getString(R.string.network_error));
+                        builder.setMessage(getActivity().getString(R.string.network_error_message));
+                        builder.setPositiveButton(getActivity().getString(R.string.retry), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.dismiss();
+                                workerThread.submit(getRepositoryList);
+                            }
+                        });
 
-                    final GithubRepos repositories = new GithubRepos();
+                        builder.setNegativeButton(getActivity().getString(R.string.cancel), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.dismiss();
+                            }
+                        });
+                        builder.show();
+                    }
+                });
+            } else {
+                try {
+                    isLoading = true;
+                    GithubAPI.Response repoList = GithubAPI.getRepositoryList("xing", GithubAPI.REPO_TYPE_PUBLIC, pagePosition, FETCH_ITEM_COUNT);
+                    if (repoList.responseCode == 200) {
+                        // Response code: 200 - everything went OK
 
-                    Type targetClassType = new TypeToken<ArrayList<GithubRepo>>() {
-                    }.getType();
-                    repositories.repositories = gson.fromJson(repoList.data, targetClassType);
+                        final GithubRepos repositories = new GithubRepos();
 
-                    if (repositories.repositories.size() == FETCH_ITEM_COUNT) {
-                        // We fetched FETCH_ITEM_COUNT number of items, so there may be more to load
-                        // increment the page position accordingly
-                        pagePosition++;
+                        Type targetClassType = new TypeToken<ArrayList<GithubRepo>>() {
+                        }.getType();
+                        repositories.repositories = gson.fromJson(repoList.data, targetClassType);
+
+                        if (repositories.repositories.size() == FETCH_ITEM_COUNT) {
+                            // We fetched FETCH_ITEM_COUNT number of items, so there may be more to load
+                            // increment the page position accordingly
+                            pagePosition++;
+                        } else {
+                            // We fetched less than FETCH_ITEM_COUNT so we will assume this was the final page
+                            continueToFetch = false;
+                        }
+
+                        // We can't change the Ui from here, so run this on the UI thread.
+                        getActivity().runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (repositories.repositories.size() > 0)
+                                    adapter.appendItems(repositories);
+                                if (getListAdapter() == null || getListView().getVisibility() != View.VISIBLE) {
+                                    setListAdapter(adapter);
+                                    if (adapter.getCount() > 0)
+                                        setListShown(true);
+                                }
+                                getListView().removeFooterView(loadingFooter);
+                            }
+                        });
+
+
                     } else {
-                        // We fetched less than FETCH_ITEM_COUNT so we will assume this was the final page
-                        continueToFetch = false;
+                        // We need to handle an invalid response here
                     }
 
-                    // We can't change the Ui from here, so run this on the UI thread.
+                } catch (UnknownHostException e) {
                     getActivity().runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            if (repositories.repositories.size() > 0)
-                                adapter.appendItems(repositories);
-                            if (getListAdapter() == null) {
-                                setListAdapter(adapter);
-                                setListShown(true);
-                            }
-                            getListView().removeFooterView(loadingFooter);
+                            Toast.makeText(getActivity(), getString(R.string.unknown_host), Toast.LENGTH_SHORT).show();
                         }
                     });
-
-
-                } else {
-                    // We need to handle an invalid response here
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-
-            } catch (Exception e) {
-                e.printStackTrace();
             }
             isLoading = false;
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     getListView().setOnScrollListener(MainActivityFragment.this);
+                    setEmptyText(getActivity().getString(R.string.no_data));
+                    setListShown(true);
                 }
             });
         }
@@ -158,6 +208,7 @@ public class MainActivityFragment extends ListFragment implements AdapterView.On
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         adapter = new RepositoryListAdapter(getActivity(), new GithubRepos());
+        setEmptyText(getActivity().getString(R.string.first_load));
         workerThread.submit(getRepositoryList);
         getListView().setOnItemLongClickListener(this);
     }
@@ -230,7 +281,7 @@ public class MainActivityFragment extends ListFragment implements AdapterView.On
                     loadingFooter = LayoutInflater.from(getActivity()).inflate(R.layout.list_loading_footer, null, false);
                 }
                 getListView().addFooterView(loadingFooter);
-                if (lastVisiblePosition >= view.getCount()-2) {
+                if (lastVisiblePosition >= view.getCount() - 2) {
                     getListView().smoothScrollToPosition(view.getCount());
                 }
                 getListView().setOnScrollListener(null);

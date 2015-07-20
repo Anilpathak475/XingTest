@@ -28,6 +28,10 @@ public class RepositoryListAdapter extends BaseAdapter {
         this.data = repositoryList;
     }
 
+    /**
+     * Append additional data to the end of the list backing this adapter
+     * @param repositoryList - new data to append
+     */
     public void appendItems(GithubRepos repositoryList) {
         if (data != null && data.repositories != null) {
             this.data.repositories.addAll(repositoryList.repositories);
