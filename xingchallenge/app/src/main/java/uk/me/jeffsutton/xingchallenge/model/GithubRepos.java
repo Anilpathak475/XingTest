@@ -1,6 +1,6 @@
 package uk.me.jeffsutton.xingchallenge.model;
 
-import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Model to hold a list of GitHub repositories as returned from the GitHub API
@@ -8,5 +8,5 @@ import java.util.List;
  * Created by jeffsutton on 20/07/15.
  */
 public class GithubRepos {
-    public List<GithubRepo> repositories;
+    public ArrayList<GithubRepo> repositories = new ArrayList<GithubRepo>();
 }

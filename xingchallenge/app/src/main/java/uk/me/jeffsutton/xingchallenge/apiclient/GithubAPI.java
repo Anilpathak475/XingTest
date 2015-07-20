@@ -50,7 +50,8 @@ public class GithubAPI {
      * @throws IOException
      */
     public static Response getRepositoryList(String username, String type, int page, int itemCount) throws IOException {
-        URL requestURL = new URL(String.format(URL_GET_REPO_LIST, username, type, page, itemCount));
+        URL requestURL = new URL(String.format(URL_GET_REPO_LIST, username, type, page, itemCount) + "&access_token=1da23c1fb776875e89e12a266baa1969f5768afa");
+        Log.d(LOG_TAG, "[GitHub API] " + requestURL.toString());
         HttpURLConnection connection = (HttpURLConnection) requestURL.openConnection();
         connection = configureConnection(connection);
         connection.connect();
