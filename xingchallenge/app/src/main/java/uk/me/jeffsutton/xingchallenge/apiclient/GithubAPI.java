@@ -51,13 +51,11 @@ public class GithubAPI {
      */
     public static Response getRepositoryList(String username, String type, int page, int itemCount) throws IOException {
         URL requestURL = new URL(String.format(URL_GET_REPO_LIST, username, type, page, itemCount) + "&access_token=1da23c1fb776875e89e12a266baa1969f5768afa");
-        Log.d(LOG_TAG, "[GitHub API] " + requestURL.toString());
         HttpURLConnection connection = (HttpURLConnection) requestURL.openConnection();
         connection = configureConnection(connection);
         connection.connect();
 
         int responseCode = connection.getResponseCode();
-        Log.d(LOG_TAG, "getRepositoryList() response code: " + responseCode);
         Map<String, List<String>> headers = connection.getHeaderFields();
         String response = getResponseString(connection.getInputStream());
 
@@ -72,7 +70,7 @@ public class GithubAPI {
         responseData.headers = headers;
         responseData.data = response;
 
-        logResponse(headers);
+//        logResponse(headers);
 
         return responseData;
     }
@@ -99,7 +97,8 @@ public class GithubAPI {
      */
     public static void logResponse(Map<String, List<String>> headers) {
         for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
-            Log.d("Header", entry.getKey() + " :\t " + entry.getValue());
+            String h = entry.getKey() + " :\t " + entry.getValue();
+            Log.d("Header", h);
         }
     }
 

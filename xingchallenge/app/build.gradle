@@ -11,10 +11,23 @@ android {
         versionCode 1
         versionName "1.0"
     }
-    buildTypes {
+    signingConfigs {
         release {
-            minifyEnabled false
+            storeFile file("../demo_keystore.jks")
+            storePassword "test123"
+            keyAlias "xing"
+            keyPassword "test123"
+        }
+    }
+    buildTypes {
+        debug {
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
     }
 }

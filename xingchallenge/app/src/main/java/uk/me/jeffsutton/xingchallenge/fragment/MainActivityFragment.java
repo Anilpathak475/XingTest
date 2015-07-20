@@ -54,27 +54,46 @@ public class MainActivityFragment extends ListFragment implements AdapterView.On
      * Number of items to fetch per API request
      */
     private static final int FETCH_ITEM_COUNT = 10;
+    private final Runnable noConnectionRunnable = new Runnable() {
+        @Override
+        public void run() {
+            // Show a dialog informing user of no internet connection.  Allow user to retry in case this is a temporary error.
+            AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+            builder.setTitle(getActivity().getString(R.string.network_error));
+            builder.setMessage(getActivity().getString(R.string.network_error_message));
+            builder.setPositiveButton(getActivity().getString(R.string.retry), new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dialog.dismiss();
+                    workerThread.submit(getRepositoryList);
+                }
+            });
 
+            builder.setNegativeButton(getActivity().getString(R.string.cancel), new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dialog.dismiss();
+                }
+            });
+            builder.show();
+        }
+    };
     /**
      * ListAdapter containing repositories
      */
     private RepositoryListAdapter adapter;
-
     /**
      * Footer view to indicate data is being loaded via the API
      */
     private View loadingFooter;
-
     /**
      * Flag to indicate if there may still be items to fetch from the API
      */
     private boolean continueToFetch = true;
-
     /**
      * Current paging position in the GitHub API
      */
     private int pagePosition = 1;
-
     /**
      * Flag to indicate if we are currently loading data
      */
@@ -165,30 +184,6 @@ public class MainActivityFragment extends ListFragment implements AdapterView.On
                     setListShown(true);
                 }
             });
-        }
-    };
-    private final Runnable noConnectionRunnable = new Runnable() {
-        @Override
-        public void run() {
-            // Show a dialog informing user of no internet connection.  Allow user to retry in case this is a temporary error.
-            AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-            builder.setTitle(getActivity().getString(R.string.network_error));
-            builder.setMessage(getActivity().getString(R.string.network_error_message));
-            builder.setPositiveButton(getActivity().getString(R.string.retry), new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    dialog.dismiss();
-                    workerThread.submit(getRepositoryList);
-                }
-            });
-
-            builder.setNegativeButton(getActivity().getString(R.string.cancel), new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    dialog.dismiss();
-                }
-            });
-            builder.show();
         }
     };
     /**
@@ -286,7 +281,7 @@ public class MainActivityFragment extends ListFragment implements AdapterView.On
     @SuppressLint("InflateParams")
     @Override
     public void onScrollStateChanged(AbsListView view, int scrollState) {
-        if (scrollState == SCROLL_STATE_IDLE && lastVisiblePosition >= (view.getCount() - 3)) {
+        if (scrollState == SCROLL_STATE_IDLE && lastVisiblePosition >= (view.getCount() - 5)) {
             // We are near the end of the list - try and load some more data
             // but only attempt to load data if we aren't already performing a load
             if (!isLoading && continueToFetch) {
