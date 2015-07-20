@@ -1,7 +1,6 @@
 package uk.me.jeffsutton.xingchallenge.adapter;
 
 import android.content.Context;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,11 +23,18 @@ public class RepositoryListAdapter extends BaseAdapter {
     LayoutInflater mInflater;
 
     public RepositoryListAdapter(Context context, GithubRepos repositoryList) {
-        Log.d(LOG_TAG, "Creating repository list adapter: " + repositoryList.repositories.size());
         this.mContext = context;
         this.mInflater = LayoutInflater.from(this.mContext);
         this.data = repositoryList;
     }
+
+    public void appendItems(GithubRepos repositoryList) {
+        if (data != null && data.repositories != null) {
+            this.data.repositories.addAll(repositoryList.repositories);
+            this.notifyDataSetChanged();
+        }
+    }
+
 
     /**
      * How many items are in the data set represented by this Adapter.

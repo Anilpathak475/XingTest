@@ -6,4 +6,5 @@
     <string name="repository">Repository</string>
     <string name="owner">User Profile</string>
     <string name="cancel">Cancel</string>
+    <string name="loading">Loading more repositories...</string>
 </resources>

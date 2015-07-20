@@ -8,7 +8,9 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.AbsListView;
 import android.widget.AdapterView;
 
 import com.google.gson.Gson;
@@ -30,7 +32,7 @@ import uk.me.jeffsutton.xingchallenge.model.GithubRepos;
 /**
  * Simple ListFragment to contain list of public repositories
  */
-public class MainActivityFragment extends ListFragment implements AdapterView.OnItemLongClickListener {
+public class MainActivityFragment extends ListFragment implements AdapterView.OnItemLongClickListener, AbsListView.OnScrollListener {
 
     private static final String LOG_TAG = MainActivityFragment.class.getSimpleName();
 
@@ -48,47 +50,67 @@ public class MainActivityFragment extends ListFragment implements AdapterView.On
      * Number of items to fetch per API request
      */
     private static final int FETCH_ITEM_COUNT = 10;
-
-    private GithubRepos repositories = new GithubRepos();
-
+    /**
+     * ListAdapter containing repositories
+     */
+    RepositoryListAdapter adapter;
+    View loadingFooter;
     /**
      * Flag to indicate if there may still be items to fetch from the API
      */
     private boolean continueToFetch = true;
-
     /**
      * Current paging position in the GitHub API
      */
-    private int pagePosition = 0;
-
+    private int pagePosition = 1;
     /**
-     *  Get the list of repositories for the specified user (in this instance XING).
-     *  <p/>
-     *  We want to do this in the background to prevent locking-up the UI Thread.
+     * Flag to indicate if we are currently loading data
+     */
+    private boolean isLoading = false;
+    /**
+     * Get the list of repositories for the specified user (in this instance XING).
+     * <p/>
+     * We want to do this in the background to prevent locking-up the UI Thread.
      */
     Runnable getRepositoryList = new Runnable() {
         @Override
         public void run() {
             try {
+                isLoading = true;
                 GithubAPI.Response repoList = GithubAPI.getRepositoryList("xing", GithubAPI.REPO_TYPE_PUBLIC, pagePosition, FETCH_ITEM_COUNT);
                 if (repoList.responseCode == 200) {
                     // Response code: 200 - everything went OK
-                    Log.i(LOG_TAG, repoList.data);
+                    Log.d(LOG_TAG, repoList.data);
 
-                    Type targetClassType = new TypeToken<ArrayList<GithubRepo>>() { }.getType();
-                    repositories.repositories = gson.fromJson(repoList.data,targetClassType);
+                    final GithubRepos repositories = new GithubRepos();
 
-                    final RepositoryListAdapter adapter = new RepositoryListAdapter(getActivity(), repositories);
+                    Type targetClassType = new TypeToken<ArrayList<GithubRepo>>() {
+                    }.getType();
+                    repositories.repositories = gson.fromJson(repoList.data, targetClassType);
+
+                    if (repositories.repositories.size() == FETCH_ITEM_COUNT) {
+                        // We fetched FETCH_ITEM_COUNT number of items, so there may be more to load
+                        // increment the page position accordingly
+                        pagePosition++;
+                    } else {
+                        // We fetched less than FETCH_ITEM_COUNT so we will assume this was the final page
+                        continueToFetch = false;
+                    }
 
                     // We can't change the Ui from here, so run this on the UI thread.
                     getActivity().runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            Log.i(LOG_TAG, "Setting repository list adapter");
-                            setListAdapter(adapter);
-                            setListShown(true);
+                            if (repositories.repositories.size() > 0)
+                                adapter.appendItems(repositories);
+                            if (getListAdapter() == null) {
+                                setListAdapter(adapter);
+                                setListShown(true);
+                            }
+                            getListView().removeFooterView(loadingFooter);
                         }
                     });
+
 
                 } else {
                     // We need to handle an invalid response here
@@ -97,14 +119,27 @@ public class MainActivityFragment extends ListFragment implements AdapterView.On
             } catch (Exception e) {
                 e.printStackTrace();
             }
+            isLoading = false;
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    getListView().setOnScrollListener(MainActivityFragment.this);
+                }
+            });
         }
     };
+    /**
+     * position of the last visible item in the list view. Used to calculate if we need to start loading more data.
+     */
+    private int lastVisiblePosition;
+
 
     public MainActivityFragment() {
     }
 
     /**
      * Basic utility method to open the web browser to a specific URL
+     *
      * @param context
      * @param url
      */
@@ -122,7 +157,7 @@ public class MainActivityFragment extends ListFragment implements AdapterView.On
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
+        adapter = new RepositoryListAdapter(getActivity(), new GithubRepos());
         workerThread.submit(getRepositoryList);
         getListView().setOnItemLongClickListener(this);
     }
@@ -172,5 +207,50 @@ public class MainActivityFragment extends ListFragment implements AdapterView.On
             builder.show();
             return true;
         }
+    }
+
+    /**
+     * Callback method to be invoked while the list view or grid view is being scrolled. If the
+     * view is being scrolled, this method will be called before the next frame of the scroll is
+     * rendered. In particular, it will be called before any calls to
+     * {@link Adapter#getView(int, View, ViewGroup)}.
+     *
+     * @param view        The view whose scroll state is being reported
+     * @param scrollState The current scroll state. One of
+     *                    {@link #SCROLL_STATE_TOUCH_SCROLL} or {@link #SCROLL_STATE_IDLE}.
+     */
+    @Override
+    public void onScrollStateChanged(AbsListView view, int scrollState) {
+        if (scrollState == SCROLL_STATE_IDLE && lastVisiblePosition >= (view.getCount() - 3)) {
+            // We are near the end of the list - try and load some more data
+            // but only attempt to load data if we aren't already performing a load
+            if (!isLoading && continueToFetch) {
+                isLoading = true;
+                if (loadingFooter == null) {
+                    loadingFooter = LayoutInflater.from(getActivity()).inflate(R.layout.list_loading_footer, null, false);
+                }
+                getListView().addFooterView(loadingFooter);
+                if (lastVisiblePosition >= view.getCount()-2) {
+                    getListView().smoothScrollToPosition(view.getCount());
+                }
+                getListView().setOnScrollListener(null);
+                workerThread.submit(getRepositoryList);
+            }
+        }
+    }
+
+    /**
+     * Callback method to be invoked when the list or grid has been scrolled. This will be
+     * called after the scroll has completed
+     *
+     * @param view             The view whose scroll state is being reported
+     * @param firstVisibleItem the index of the first visible cell (ignore if
+     *                         visibleItemCount == 0)
+     * @param visibleItemCount the number of visible cells
+     * @param totalItemCount   the number of items in the list adaptor
+     */
+    @Override
+    public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+        this.lastVisiblePosition = firstVisibleItem + visibleItemCount;
     }
 }
