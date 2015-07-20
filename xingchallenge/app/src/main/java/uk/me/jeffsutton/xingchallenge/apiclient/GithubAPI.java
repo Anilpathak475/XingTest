@@ -113,10 +113,10 @@ public class GithubAPI {
     public static String getResponseString(InputStream stream) throws IOException {
         StringBuilder stringBuilder = new StringBuilder();
         BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
-        String line = null;
+        String line;
         while ((line = reader.readLine()) != null)
         {
-            stringBuilder.append(line + "\n");
+            stringBuilder.append(line).append("\n");
         }
         return stringBuilder.toString();
     }

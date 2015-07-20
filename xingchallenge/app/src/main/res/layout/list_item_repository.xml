@@ -13,7 +13,6 @@
         android:layout_alignParentTop="true"
         android:lines="1"
         android:maxLines="1"
-        android:text="Repository Name"
         android:textStyle="bold"/>
 
     <TextView
@@ -25,7 +24,6 @@
         android:layout_below="@+id/repo_name"
         android:lines="1"
         android:maxLines="1"
-        android:text="Repository Owner"
         android:textAppearance="?android:attr/textAppearanceSmall"
         android:textStyle="italic"/>
 
@@ -35,6 +33,5 @@
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
-        android:layout_below="@+id/repo_owner"
-        android:text="repository Description"/>
+        android:layout_below="@+id/repo_owner"/>
 </RelativeLayout>

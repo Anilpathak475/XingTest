@@ -19,7 +19,7 @@ public class GithubRepo {
     public boolean private_repo;
     public String html_url;
     public String description;
-    public boolean fork = false;
+    public boolean fork = true;
     public Date created_at;
     public Date updated_at;
     public Date pushed_at;

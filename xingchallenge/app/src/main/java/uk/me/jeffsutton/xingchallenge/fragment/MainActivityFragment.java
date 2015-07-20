@@ -1,5 +1,6 @@
 package uk.me.jeffsutton.xingchallenge.fragment;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.ListFragment;
 import android.content.Context;
@@ -57,12 +58,12 @@ public class MainActivityFragment extends ListFragment implements AdapterView.On
     /**
      * ListAdapter containing repositories
      */
-    RepositoryListAdapter adapter;
+    private RepositoryListAdapter adapter;
 
     /**
      * Footer view to indicate data is being loaded via the API
      */
-    View loadingFooter;
+    private View loadingFooter;
 
     /**
      * Flag to indicate if there may still be items to fetch from the API
@@ -78,7 +79,6 @@ public class MainActivityFragment extends ListFragment implements AdapterView.On
      * Flag to indicate if we are currently loading data
      */
     private boolean isLoading = false;
-
     /**
      * Get the list of repositories for the specified user (in this instance XING).
      * <p/>
@@ -86,35 +86,12 @@ public class MainActivityFragment extends ListFragment implements AdapterView.On
      * <p/>
      * When data is loaded we append it to the list adapter.
      */
-    Runnable getRepositoryList = new Runnable() {
+    private final Runnable getRepositoryList = new Runnable() {
         @Override
         public void run() {
             if (!Utils.isConnected(getActivity())) {
                 Log.i(LOG_TAG, "No network found");
-                getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        // Show a dialog informing user of no internet connection.  Allow user to retry in case this is a temporary error.
-                        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-                        builder.setTitle(getActivity().getString(R.string.network_error));
-                        builder.setMessage(getActivity().getString(R.string.network_error_message));
-                        builder.setPositiveButton(getActivity().getString(R.string.retry), new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                dialog.dismiss();
-                                workerThread.submit(getRepositoryList);
-                            }
-                        });
-
-                        builder.setNegativeButton(getActivity().getString(R.string.cancel), new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                dialog.dismiss();
-                            }
-                        });
-                        builder.show();
-                    }
-                });
+                getActivity().runOnUiThread(noConnectionRunnable);
             } else {
                 try {
                     isLoading = true;
@@ -190,6 +167,30 @@ public class MainActivityFragment extends ListFragment implements AdapterView.On
             });
         }
     };
+    private final Runnable noConnectionRunnable = new Runnable() {
+        @Override
+        public void run() {
+            // Show a dialog informing user of no internet connection.  Allow user to retry in case this is a temporary error.
+            AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+            builder.setTitle(getActivity().getString(R.string.network_error));
+            builder.setMessage(getActivity().getString(R.string.network_error_message));
+            builder.setPositiveButton(getActivity().getString(R.string.retry), new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dialog.dismiss();
+                    workerThread.submit(getRepositoryList);
+                }
+            });
+
+            builder.setNegativeButton(getActivity().getString(R.string.cancel), new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dialog.dismiss();
+                }
+            });
+            builder.show();
+        }
+    };
     /**
      * position of the last visible item in the list view. Used to calculate if we need to start loading more data.
      */
@@ -205,7 +206,7 @@ public class MainActivityFragment extends ListFragment implements AdapterView.On
      * @param context
      * @param url
      */
-    public static void openBrowser(Context context, String url) {
+    private static void openBrowser(Context context, String url) {
         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
         context.startActivity(intent);
     }
@@ -282,6 +283,7 @@ public class MainActivityFragment extends ListFragment implements AdapterView.On
      * @param scrollState The current scroll state. One of
      *                    {@link #SCROLL_STATE_TOUCH_SCROLL} or {@link #SCROLL_STATE_IDLE}.
      */
+    @SuppressLint("InflateParams")
     @Override
     public void onScrollStateChanged(AbsListView view, int scrollState) {
         if (scrollState == SCROLL_STATE_IDLE && lastVisiblePosition >= (view.getCount() - 3)) {

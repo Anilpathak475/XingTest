@@ -5,8 +5,8 @@
     <string name="repository">Repository</string>
     <string name="owner">User Profile</string>
     <string name="cancel">Cancel</string>
-    <string name="loading">Loading more repositories...</string>
-    <string name="first_load">Loading repositories...</string>
+    <string name="loading">Loading more repositories…</string>
+    <string name="first_load">Loading repositories…</string>
     <string name="no_data">Unable to load repositories, or no repositories found.</string>
 
     <string name="unknown_host">Unable to connect to GitHub.</string>

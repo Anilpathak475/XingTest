@@ -18,9 +18,9 @@ public class RepositoryListAdapter extends BaseAdapter {
 
     private static final String LOG_TAG = RepositoryListAdapter.class.getSimpleName();
 
-    GithubRepos data;
-    Context mContext;
-    LayoutInflater mInflater;
+    private final GithubRepos data;
+    private final Context mContext;
+    private final LayoutInflater mInflater;
 
     public RepositoryListAdapter(Context context, GithubRepos repositoryList) {
         this.mContext = context;

@@ -8,5 +8,5 @@ import java.util.ArrayList;
  * Created by jeffsutton on 20/07/15.
  */
 public class GithubRepos {
-    public ArrayList<GithubRepo> repositories = new ArrayList<GithubRepo>();
+    public ArrayList<GithubRepo> repositories = new ArrayList<>();
 }
