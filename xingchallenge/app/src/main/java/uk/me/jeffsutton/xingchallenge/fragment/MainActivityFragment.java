@@ -32,13 +32,33 @@ import uk.me.jeffsutton.xingchallenge.model.GithubRepos;
  */
 public class MainActivityFragment extends ListFragment implements AdapterView.OnItemLongClickListener {
 
-    protected static final ExecutorService workerThread = Executors.newSingleThreadExecutor();
-    protected static final Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HHmmss.SSS'Z'").setPrettyPrinting().create();
     private static final String LOG_TAG = MainActivityFragment.class.getSimpleName();
+
+    /**
+     * ExecutorService to handle background API requests
+     */
+    private static final ExecutorService workerThread = Executors.newSingleThreadExecutor();
+
+    /**
+     * Gson instance which also handles Dates as strings in ATOM_TIME format.
+     */
+    private static final Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HHmmss.SSS'Z'").setPrettyPrinting().create();
+
+    /**
+     * Number of items to fetch per API request
+     */
     private static final int FETCH_ITEM_COUNT = 10;
 
     private GithubRepos repositories = new GithubRepos();
+
+    /**
+     * Flag to indicate if there may still be items to fetch from the API
+     */
     private boolean continueToFetch = true;
+
+    /**
+     * Current paging position in the GitHub API
+     */
     private int pagePosition = 0;
 
     /**

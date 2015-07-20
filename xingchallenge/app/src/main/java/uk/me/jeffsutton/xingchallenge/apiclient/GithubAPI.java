@@ -24,17 +24,17 @@ public class GithubAPI {
     /**
      * URL Path for list of user repositories
      */
-    public static final String URL_GET_REPO_LIST = API_BASE + "/users/%1$s/repos?type=%2$s";
+    public static final String URL_GET_REPO_LIST = API_BASE + "/users/%1$s/repos?type=%2$s&page=%3$d&per_page=%4$d";
     /**
-     * Modifier for repository list.  Request all user repositories.
+     * Modifier for getRepositoryList().  Request all user repositories.
      */
     public static final String REPO_TYPE_ALL = "all";
     /**
-     * Modifier for repository list.  Request public user repositories.
+     * Modifier for getRepositoryList().  Request public user repositories.
      */
     public static final String REPO_TYPE_PUBLIC = "public";
     /**
-     * Modifier for repository list.  Request private user repositories.
+     * Modifier for getRepositoryList().  Request private user repositories.
      */
     public static final String REPO_TYPE_PRIVATE = "private";
     private static final String LOG_TAG = GithubAPI.class.getSimpleName();
@@ -44,11 +44,13 @@ public class GithubAPI {
      *
      * @param username - name of the user we want to get repositories for
      * @param type - modifier to filter returned repositories REPO_TYPE_ALL, REPO_TYPE_PUBLIC, REPO_TYPE_PRIVATE
+     * @param page - page or results to request
+     * @param itemCount - number of items to return in response
      * @return Response - the API response
      * @throws IOException
      */
     public static Response getRepositoryList(String username, String type, int page, int itemCount) throws IOException {
-        URL requestURL = new URL(String.format(URL_GET_REPO_LIST, username, type));
+        URL requestURL = new URL(String.format(URL_GET_REPO_LIST, username, type, page, itemCount));
         HttpURLConnection connection = (HttpURLConnection) requestURL.openConnection();
         connection = configureConnection(connection);
         connection.connect();
