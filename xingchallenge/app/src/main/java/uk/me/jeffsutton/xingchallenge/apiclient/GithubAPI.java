@@ -30,7 +30,7 @@ public class GithubAPI {
      * Access token for requests.  In a real app we would want to hide this - perhaps as a byte[]
      * or using string encryption from DexGuard
      */
-    private static final String ACCESS_TOKEN = "1da23c1fb776875e89e12a266baa1969f5768afa";
+    private static final String ACCESS_TOKEN = "";
 
     /**
      * Modifier for getRepositoryList().  Request all user repositories.
